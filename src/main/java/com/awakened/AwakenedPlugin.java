@@ -16,6 +16,7 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
 @PluginDescriptor(
@@ -32,6 +33,12 @@ public class AwakenedPlugin extends Plugin
 	@Inject
 	private AwakenedConfig config;
 
+	@Inject
+	private OverlayManager overlayManager;
+
+	@Inject
+	private AwakenedItemOverlay itemOverlay;
+
 	private static final String[] RAINBOW_COLORS = {
 		"ff0000", "ffff00", "00ff00", "00ffff", "0000ff"
 	};
@@ -43,12 +50,14 @@ public class AwakenedPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		log.debug("Example started!");
+		overlayManager.add(itemOverlay);
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
 		log.debug("Example stopped!");
+		overlayManager.remove(itemOverlay);
 	}
 
 	@Subscribe
