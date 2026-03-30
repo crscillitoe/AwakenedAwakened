@@ -62,6 +62,7 @@ public class AwakenedPlugin extends Plugin
 		log.debug("Example stopped!");
 		overlayManager.remove(itemOverlay);
 		FakeAxe.cleanupAll();
+		PoisonTile.cleanupAll();
 	}
 
 	@Subscribe
@@ -79,6 +80,7 @@ public class AwakenedPlugin extends Plugin
 	public void onGameTick(GameTick event)
 	{
 		FakeAxe.tickAll(client);
+		PoisonTile.tickAll(client, config.poisonTileDuration());
 		rainbowDialog();
 
 		if (spawnTickCount > 0) {
