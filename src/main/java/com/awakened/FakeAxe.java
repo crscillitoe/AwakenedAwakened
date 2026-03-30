@@ -1,10 +1,7 @@
 package com.awakened;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.Model;
-import net.runelite.api.NPC;
-import net.runelite.api.RuneLiteObject;
+import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 
@@ -179,9 +176,18 @@ public class FakeAxe
 			if (Math.abs(playerLp.getSceneX() - axeLp.getSceneX()) <= 1 &&
 				Math.abs(playerLp.getSceneY() - axeLp.getSceneY()) <= 1)
 			{
+				log.debug("Player position X: " + playerLp.getSceneX() + " Y: " + playerLp.getSceneY());
+				log.debug("Axe    position X: " + axeLp.getSceneX() + " Y: " + axeLp.getSceneY());
 				total += randomBetween(30, 50);
 			}
 		}
+
+		if (total > 0 )
+		{
+			// Axe sound effect
+			client.playSoundEffect(7083);
+		}
+
 		return total;
 	}
 

@@ -56,6 +56,8 @@ public class AwakenedPlugin extends Plugin
 	@Getter
     private int fakeHp = MAX_FAKE_HP;
 
+	private boolean poisonActive = false;
+
 	private static final int VARDORVIS_REGION = 4405;
 	private static final String[] RAINBOW_COLORS = {
 		"ff0000", "ffff00", "00ff00", "00ffff", "0000ff"
@@ -93,7 +95,25 @@ public class AwakenedPlugin extends Plugin
 			FakeAxe.cleanupAll();
 			PoisonTile.cleanupAll();
 			fakeHp = MAX_FAKE_HP;
+			poisonActive = false;
 			deathOverlay.hide();
+		}
+	}
+
+	@Subscribe
+	public void onNpcChanged(NpcChanged event)
+	{
+		int id = event.getNpc().getId();
+		if (id == 12223)
+		{
+			int healthRatio = event.getNpc().getHealthRatio();
+			int healthScale = event.getNpc().getHealthScale();
+
+			double ratio = (double)healthRatio / (double)healthScale;
+			if (ratio <= 0.5)
+			{
+				poisonActive = true;
+			}
 		}
 	}
 
@@ -121,10 +141,15 @@ public class AwakenedPlugin extends Plugin
 		{
 			return;
 		}
-		FakeAxe.tickAll(client);
-		PoisonTile.tickAll(client, config.poisonTileDuration());
-
 		handleDamage();
+
+		FakeAxe.tickAll(client);
+
+		if (poisonActive)
+		{
+			PoisonTile.tickAll(client, config.poisonTileDuration());
+		}
+
 
 		if (spawnTickCount > 0) {
 			spawnTickCount--;
