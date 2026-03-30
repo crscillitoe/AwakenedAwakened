@@ -2,8 +2,11 @@ package com.awakened;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;
+
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
@@ -39,8 +42,17 @@ public class AwakenedPlugin extends Plugin
 
 	@Inject
 	private AwakenedItemOverlay itemOverlay;
+
+	@Inject
+	private HpBarOverlay hpBarOverlay;
+
 	private int spawnTickCount = 0;
 
+	public static final int MAX_FAKE_HP = 99;
+	@Getter
+    private int fakeHp = MAX_FAKE_HP;
+
+	private static final int VARDORVIS_REGION = 4405;
 	private static final String[] RAINBOW_COLORS = {
 		"ff0000", "ffff00", "00ff00", "00ffff", "0000ff"
 	};
@@ -53,6 +65,7 @@ public class AwakenedPlugin extends Plugin
 	{
 		log.debug("Example started!");
 		overlayManager.add(itemOverlay);
+		overlayManager.add(hpBarOverlay);
 		FakeAxe.initPaths();
 	}
 
@@ -61,13 +74,29 @@ public class AwakenedPlugin extends Plugin
 	{
 		log.debug("Example stopped!");
 		overlayManager.remove(itemOverlay);
+		overlayManager.remove(hpBarOverlay);
 		FakeAxe.cleanupAll();
 		PoisonTile.cleanupAll();
 	}
 
 	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() == GameState.LOADING)
+		{
+			FakeAxe.cleanupAll();
+			PoisonTile.cleanupAll();
+			fakeHp = MAX_FAKE_HP;
+		}
+	}
+
+	@Subscribe
 	public void onNpcSpawned(NpcSpawned event)
 	{
+		if (!isInVardorvisInstance())
+		{
+			return;
+		}
 		NPC npc = event.getNpc();
 		if (npc.getId() == FakeAxe.NPC_AXE_STATIC && FakeAxe.isAtAnySpawnTile(client, npc) && spawnTickCount == 0)
 		{
@@ -79,13 +108,43 @@ public class AwakenedPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
+		rainbowDialog();
+
+		if (!isInVardorvisInstance())
+		{
+			return;
+		}
 		FakeAxe.tickAll(client);
 		PoisonTile.tickAll(client, config.poisonTileDuration());
-		rainbowDialog();
+
+		handleDamage();
 
 		if (spawnTickCount > 0) {
 			spawnTickCount--;
 		}
+	}
+
+    public void handleDamage()
+	{
+		int damageTaken = PoisonTile.getDamage() + FakeAxe.getDamage();
+		fakeHp = Math.max(0, fakeHp - damageTaken);
+		// TODO: display 'YOU DIED' and stop player action when fakeHp == 0
+	}
+
+	boolean isInVardorvisInstance()
+	{
+		if (!client.isInInstancedRegion())
+		{
+			return false;
+		}
+		for (int region : client.getMapRegions())
+		{
+			if (region == VARDORVIS_REGION)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void rainbowDialog()

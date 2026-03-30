@@ -13,7 +13,7 @@ import java.util.List;
 public class PoisonTile
 {
 	// TODO: Replace with confirmed ground blob model ID
-	private static final int POISON_MODEL_ID = 57726;
+	private static final int POISON_MODEL_ID = 29311;
 
 	// ── Static manager state ──────────────────────────────────────────────────
 	private static final List<PoisonTile> ACTIVE = new ArrayList<>();
@@ -23,8 +23,6 @@ public class PoisonTile
 	private final RuneLiteObject obj;
 	private final WorldPoint tile;
 	private int ticksRemaining;
-
-	private static boolean hasScaled = false;
 
 	private PoisonTile(RuneLiteObject obj, WorldPoint tile, int duration)
 	{
@@ -50,12 +48,16 @@ public class PoisonTile
 		lastPlayerTile = current;
 
 		ACTIVE.removeIf(PoisonTile::tick);
+	}
 
-		if (!hasScaled)
-		{
-			client.loadModel(POISON_MODEL_ID).scale(64, 64, 64);
-			hasScaled = true;
-		}
+	/**
+	 * Given the current gamestate, determine if any damage should be dealt to the player
+	 *
+	 * Returns 0 if the player should take no damage on this tick.
+	 */
+	public static int getDamage() {
+		// TODO, Return 10 if player is standing on any active poison
+		return 0;
 	}
 
 	/**

@@ -155,6 +155,16 @@ public class FakeAxe
 		return SPAWN_TILES.stream().anyMatch(t -> npcIsAtTile(client, npc, t));
 	}
 
+	/**
+	 * Given the current gamestate, determine if any damage should be dealt to the player
+	 *
+	 * Returns 0 if the player should take no damage on this tick.
+	 */
+	public static int getDamage() {
+		// TODO: Deal between 30 and 50 damage if the player is within a 3x3 box with the fake axe at the center
+		return 0;
+	}
+
 	// ── Static: spawn ─────────────────────────────────────────────────────────
 	public static void spawnMissing(Client client)
 	{
