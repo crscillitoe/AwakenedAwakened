@@ -160,9 +160,29 @@ public class FakeAxe
 	 *
 	 * Returns 0 if the player should take no damage on this tick.
 	 */
-	public static int getDamage() {
-		// TODO: Deal between 30 and 50 damage if the player is within a 3x3 box with the fake axe at the center
-		return 0;
+	public static int getDamage(Client client)
+	{
+		// Player position in scene (local) coordinates — instance-space, not template-space
+		LocalPoint playerLp = client.getLocalPlayer().getLocalLocation();
+		if (playerLp == null) return 0;
+
+		int total = 0;
+		for (FakeAxe axe : ACTIVE)
+		{
+			// Idle axes sit on their spawn tile; moving axes use their current path index
+			int posIndex = axe.moving ? axe.currentIndex : 0;
+
+			// toLocalPoint converts template WorldPoint → instance LocalPoint
+			LocalPoint axeLp = toLocalPoint(client, axe.path.get(posIndex));
+			if (axeLp == null) continue;
+
+			if (Math.abs(playerLp.getSceneX() - axeLp.getSceneX()) <= 1 &&
+				Math.abs(playerLp.getSceneY() - axeLp.getSceneY()) <= 1)
+			{
+				total += randomBetween(30, 50);
+			}
+		}
+		return total;
 	}
 
 	// ── Static: spawn ─────────────────────────────────────────────────────────
@@ -242,7 +262,6 @@ public class FakeAxe
 			fake.runeLiteObject.setActive(false);
 		}
 		ACTIVE.clear();
-		hasScaled = false;
 	}
 
 	// ── Static: tick all ─────────────────────────────────────────────────────

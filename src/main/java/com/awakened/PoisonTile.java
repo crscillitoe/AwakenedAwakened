@@ -55,8 +55,16 @@ public class PoisonTile
 	 *
 	 * Returns 0 if the player should take no damage on this tick.
 	 */
-	public static int getDamage() {
-		// TODO, Return 10 if player is standing on any active poison
+	public static int getDamage(Client client)
+	{
+		WorldPoint playerPos = client.getLocalPlayer().getWorldLocation();
+		for (PoisonTile pt : ACTIVE)
+		{
+			if (pt.tile.equals(playerPos))
+			{
+				return 10;
+			}
+		}
 		return 0;
 	}
 

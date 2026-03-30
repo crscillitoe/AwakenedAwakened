@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
@@ -46,6 +47,9 @@ public class AwakenedPlugin extends Plugin
 	@Inject
 	private HpBarOverlay hpBarOverlay;
 
+	@Inject
+	private DeathOverlay deathOverlay;
+
 	private int spawnTickCount = 0;
 
 	public static final int MAX_FAKE_HP = 99;
@@ -66,6 +70,7 @@ public class AwakenedPlugin extends Plugin
 		log.debug("Example started!");
 		overlayManager.add(itemOverlay);
 		overlayManager.add(hpBarOverlay);
+		overlayManager.add(deathOverlay);
 		FakeAxe.initPaths();
 	}
 
@@ -75,6 +80,7 @@ public class AwakenedPlugin extends Plugin
 		log.debug("Example stopped!");
 		overlayManager.remove(itemOverlay);
 		overlayManager.remove(hpBarOverlay);
+		overlayManager.remove(deathOverlay);
 		FakeAxe.cleanupAll();
 		PoisonTile.cleanupAll();
 	}
@@ -87,6 +93,7 @@ public class AwakenedPlugin extends Plugin
 			FakeAxe.cleanupAll();
 			PoisonTile.cleanupAll();
 			fakeHp = MAX_FAKE_HP;
+			deathOverlay.hide();
 		}
 	}
 
@@ -124,11 +131,23 @@ public class AwakenedPlugin extends Plugin
 		}
 	}
 
-    public void handleDamage()
+	public void handleDamage()
 	{
-		int damageTaken = PoisonTile.getDamage() + FakeAxe.getDamage();
+		int damageTaken = PoisonTile.getDamage(client) + FakeAxe.getDamage(client);
 		fakeHp = Math.max(0, fakeHp - damageTaken);
-		// TODO: display 'YOU DIED' and stop player action when fakeHp == 0
+		if (fakeHp == 0)
+		{
+			deathOverlay.show();
+		}
+	}
+
+	@Subscribe
+	public void onMenuEntryAdded(MenuEntryAdded event)
+	{
+		if (isInVardorvisInstance() && fakeHp == 0)
+		{
+			client.setMenuEntries(new MenuEntry[0]);
+		}
 	}
 
 	boolean isInVardorvisInstance()
