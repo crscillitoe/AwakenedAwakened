@@ -3,16 +3,7 @@ package com.awakened;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Animation;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.ItemID;
-import net.runelite.api.Model;
-import net.runelite.api.ModelData;
-import net.runelite.api.NPC;
-import net.runelite.api.NPCComposition;
-import net.runelite.api.RuneLiteObject;
+import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
@@ -79,6 +70,7 @@ public class AwakenedPlugin extends Plugin
 	private final Set<WorldPoint> spawnTiles = new HashSet<>();
 	private final List<FakeAxe> fakes = new ArrayList<>();
 	private boolean pendingFakeSpawn = false;
+	private boolean hasScaled = false;
 	private Model movingAxeModel = null;
 	private int movingAxeAnim = -1;
 
@@ -102,6 +94,7 @@ public class AwakenedPlugin extends Plugin
 
 	private void initPaths()
 	{
+
 		axePaths.clear();
 		spawnTiles.clear();
 
@@ -112,7 +105,7 @@ public class AwakenedPlugin extends Plugin
 			WorldPoint.fromRegion(4405, 40, 26, 0),
 			WorldPoint.fromRegion(4405, 42, 26, 0),
 			WorldPoint.fromRegion(4405, 44, 26, 0),
-			WorldPoint.fromRegion(4405, 46, 26, 0)
+			WorldPoint.fromRegion(4405, 45, 26, 0)
 		));
 
 		// Red path
@@ -122,7 +115,7 @@ public class AwakenedPlugin extends Plugin
 			WorldPoint.fromRegion(4405, 40, 27, 0),
 			WorldPoint.fromRegion(4405, 42, 25, 0),
 			WorldPoint.fromRegion(4405, 44, 23, 0),
-			WorldPoint.fromRegion(4405, 46, 21, 0)
+			WorldPoint.fromRegion(4405, 45, 22, 0)
 		));
 
 		// Cyan path
@@ -132,7 +125,7 @@ public class AwakenedPlugin extends Plugin
 			WorldPoint.fromRegion(4405, 41, 25, 0),
 			WorldPoint.fromRegion(4405, 41, 27, 0),
 			WorldPoint.fromRegion(4405, 41, 29, 0),
-			WorldPoint.fromRegion(4405, 41, 31, 0)
+			WorldPoint.fromRegion(4405, 41, 30, 0)
 		));
 
 		// Green path
@@ -142,13 +135,52 @@ public class AwakenedPlugin extends Plugin
 			WorldPoint.fromRegion(4405, 42, 27, 0),
 			WorldPoint.fromRegion(4405, 40, 25, 0),
 			WorldPoint.fromRegion(4405, 38, 23, 0),
-			WorldPoint.fromRegion(4405, 36, 21, 0)
+			WorldPoint.fromRegion(4405, 37, 22, 0)
+		));
+
+		// White path
+		axePaths.add(Arrays.asList(
+				WorldPoint.fromRegion(4405, 46, 26, 0),
+				WorldPoint.fromRegion(4405, 44, 26, 0),
+				WorldPoint.fromRegion(4405, 42, 26, 0),
+				WorldPoint.fromRegion(4405, 40, 26, 0),
+				WorldPoint.fromRegion(4405, 38, 26, 0),
+				WorldPoint.fromRegion(4405, 37, 26, 0)
+		));
+
+		// Red path
+		axePaths.add(Arrays.asList(
+				WorldPoint.fromRegion(4405, 46, 21, 0),
+				WorldPoint.fromRegion(4405, 44, 23, 0),
+				WorldPoint.fromRegion(4405, 42, 25, 0),
+				WorldPoint.fromRegion(4405, 40, 27, 0),
+				WorldPoint.fromRegion(4405, 38, 29, 0),
+				WorldPoint.fromRegion(4405, 37, 30, 0)
+		));
+
+		// Cyan path
+		axePaths.add(Arrays.asList(
+				WorldPoint.fromRegion(4405, 41, 31, 0),
+				WorldPoint.fromRegion(4405, 41, 29, 0),
+				WorldPoint.fromRegion(4405, 41, 27, 0),
+				WorldPoint.fromRegion(4405, 41, 25, 0),
+				WorldPoint.fromRegion(4405, 41, 23, 0),
+				WorldPoint.fromRegion(4405, 41, 22, 0)
+		));
+
+		// Green path
+		axePaths.add(Arrays.asList(
+				WorldPoint.fromRegion(4405, 36, 21, 0),
+				WorldPoint.fromRegion(4405, 38, 23, 0),
+				WorldPoint.fromRegion(4405, 40, 25, 0),
+				WorldPoint.fromRegion(4405, 42, 27, 0),
+				WorldPoint.fromRegion(4405, 44, 29, 0),
+				WorldPoint.fromRegion(4405, 45, 30, 0)
 		));
 
 		for (List<WorldPoint> path : axePaths)
 		{
 			spawnTiles.add(path.get(0));
-			spawnTiles.add(path.get(5));
 		}
 
 		log.info("[FakeAxe] initPaths: spawnTiles={}", spawnTiles);
@@ -222,94 +254,6 @@ public class AwakenedPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcChanged(NpcChanged event)
-	{
-		NPC npc = event.getNpc();
-		int oldId = event.getOld().getId();
-		int newId = npc.getId();
-
-		// Capture the moving axe model/anim once for use when fakes start moving
-		if (newId == NPC_AXE_MOVING)
-		{
-			movingAxeModel = npc.getModel();
-			movingAxeAnim = npc.getAnimation();
-			dbg("Captured moving axe model/anim=" + movingAxeAnim);
-		}
-	}
-
-	private void startMovingFake(FakeAxe fake)
-	{
-		NPC target = null;
-		for (NPC npc : client.getNpcs())
-		{
-			if (npc.getId() == NPC_AXE_MOVING)
-			{
-				target = npc;
-				break;
-			}
-			if (npc.getId() == NPC_AXE_STATIC && target == null)
-			{
-				target = npc;
-			}
-		}
-
-		if (target != null)
-		{
-			Model model = buildNpcModel(target);
-			if (model != null)
-			{
-				fake.getRuneLiteObject().setModel(model);
-			}
-			int animId = target.getAnimation();
-			if (animId != -1)
-			{
-				fake.getRuneLiteObject().setAnimation(client.loadAnimation(animId));
-			}
-		}
-		fake.setMoving(true);
-	}
-
-	private Model buildNpcModel(NPC npc)
-	{
-		NPCComposition comp = npc.getTransformedComposition();
-		if (comp == null)
-		{
-			comp = npc.getComposition();
-		}
-		if (comp == null)
-		{
-			return null;
-		}
-
-		int[] modelIds = comp.getModels();
-		if (modelIds == null || modelIds.length == 0)
-		{
-			return null;
-		}
-
-		ModelData[] datas = new ModelData[modelIds.length];
-		for (int i = 0; i < modelIds.length; i++)
-		{
-			datas[i] = client.loadModelData(modelIds[i]);
-		}
-
-		ModelData merged = client.mergeModels(datas, datas.length);
-
-		short[] colorToReplace = comp.getColorToReplace();
-		short[] colorToReplaceWith = comp.getColorToReplaceWith();
-		if (colorToReplace != null && colorToReplaceWith != null && colorToReplace.length > 0)
-		{
-			merged = merged.cloneColors();
-			for (int i = 0; i < colorToReplace.length; i++)
-			{
-				merged.recolor(colorToReplace[i], colorToReplaceWith[i]);
-			}
-		}
-
-		return merged.light();
-	}
-
-	@Subscribe
 	public void onGameTick(GameTick event)
 	{
 		moveAxes();
@@ -351,16 +295,54 @@ public class AwakenedPlugin extends Plugin
 			{
 				int ticks = fake.getTicksUntilThrow() - 1;
 				fake.setTicksUntilThrow(ticks);
+				if (ticks == 1)
+				{
+					// Pulling back to throw animation
+					Model toSet = client.loadModel(49300);
+					fake.getRuneLiteObject().setModel(toSet);
+					fake.getRuneLiteObject().setAnimation(client.loadAnimation(10365));
+
+					WorldPoint center = WorldPoint.fromRegion(4405, 41, 26, 0);
+					int centerX = center.getX();
+					int centerY = center.getY();
+
+					int lpx = fake.getPath().get(0).getX();
+					int lpy = fake.getPath().get(0).getY();
+
+					if (lpx == centerX && lpy < centerY) {
+						fake.getRuneLiteObject().setOrientation(1024);
+					} else if (lpx < centerX && lpy < centerY) {
+						fake.getRuneLiteObject().setOrientation(1280);
+					} else if (lpx < centerX && lpy == centerY) {
+						fake.getRuneLiteObject().setOrientation(1536);
+					} else if (lpx < centerX && lpy > centerY) {
+						fake.getRuneLiteObject().setOrientation(1792);
+					} else if (lpx == centerX && lpy > centerY) {
+						fake.getRuneLiteObject().setOrientation(0);
+					} else if (lpx > centerX && lpy > centerY) {
+						fake.getRuneLiteObject().setOrientation(256);
+					} else if (lpx > centerX && lpy == centerY) {
+						fake.getRuneLiteObject().setOrientation(512);
+					} else if (lpx > centerX && lpy < centerY) {
+						fake.getRuneLiteObject().setOrientation(768);
+					}
+				}
 				if (ticks <= 0)
 				{
-					startMovingFake(fake);
+					fake.setMoving(true);
 				}
 				continue;
 			}
 
+			// Thrown axe spinning through the air
+			Model toSet = client.loadModel(49304);
+			fake.getRuneLiteObject().setModel(toSet);
+			fake.getRuneLiteObject().setAnimation(client.loadAnimation(10366));
+
+
 			List<WorldPoint> path = fake.getPath();
 			int idx = fake.getCurrentIndex();
-			idx = fake.isReversed() ? idx - 1 : idx + 1;
+			idx = idx + 1;
 
 			if (idx < 0 || idx >= path.size())
 			{
@@ -386,7 +368,11 @@ public class AwakenedPlugin extends Plugin
 
 	private void spawnMissingFakes()
 	{
-		dbg("spawnMissingFakes called — instanced=" + client.isInInstancedRegion());
+		if (!hasScaled) {
+			client.loadModel(49300).scale(192, 192, 192);
+			client.loadModel(49304).scale(192, 192, 192);
+			hasScaled = true;
+		}
 
 		if (!fakes.isEmpty())
 		{
@@ -432,52 +418,62 @@ public class AwakenedPlugin extends Plugin
 		Map<WorldPoint, FakeAxe> newFakes = new HashMap<>();
 		for (List<WorldPoint> path : axePaths)
 		{
-			for (int spawnIdx : new int[]{0, 5})
+			WorldPoint spawnTile = path.get(0);
+			boolean hasReal = realAxeAtSpawn.containsKey(spawnTile);
+			if (hasReal)
 			{
-				WorldPoint spawnTile = path.get(spawnIdx);
-				boolean hasReal = realAxeAtSpawn.containsKey(spawnTile);
-				if (hasReal)
-				{
-					dbg("Skipping " + spawnTile + " real=" + hasReal);
-					continue;
-				}
-
-				// Use toLocalPoint to handle instanced regions
-				LocalPoint lp = toLocalPoint(spawnTile);
-				if (lp == null)
-				{
-					dbg("LocalPoint null for " + spawnTile + " — skipping");
-					continue;
-				}
-
-				RuneLiteObject obj = client.createRuneLiteObject();
-
-				if (staticAxeNpc != null)
-				{
-					Model staticModel = buildNpcModel(staticAxeNpc);
-				if (staticModel != null)
-				{
-					obj.setModel(staticModel);
-				}
-					int animId = staticAxeNpc.getAnimation();
-					if (animId != -1)
-					{
-						// obj.setAnimation(client.loadAnimation(animId));
-					}
-				}
-
-				obj.setLocation(lp, client.getPlane());
-				obj.setActive(true);
-
-				// reversed=true when spawning at index 5 (moves 5→0), false at index 0 (moves 0→5)
-				boolean reversed = (spawnIdx == 5);
-				FakeAxe fake = new FakeAxe(obj, path, reversed);
-				fake.setCurrentIndex(spawnIdx);
-				fake.setTicksUntilThrow(3);
-				fakes.add(fake);
-				newFakes.put(spawnTile, fake);
-				dbg("Spawned fake at " + spawnTile + " idx=" + spawnIdx + " reversed=" + reversed);
+				dbg("Skipping " + spawnTile + " real=" + hasReal);
+				continue;
 			}
+
+			// Use toLocalPoint to handle instanced regions
+			LocalPoint lp = toLocalPoint(spawnTile);
+			if (lp == null)
+			{
+				dbg("LocalPoint null for " + spawnTile + " — skipping");
+				continue;
+			}
+
+			RuneLiteObject obj = client.createRuneLiteObject();
+
+			// TODO Static Variable Global Names
+			Model toSet = client.loadModel(49300);
+			obj.setModel(toSet);
+			obj.setAnimation(client.loadAnimation(10364));
+
+			WorldPoint center = WorldPoint.fromRegion(4405, 41, 26, 0);
+			int centerX = center.getX();
+			int centerY = center.getY();
+			int lpx = spawnTile.getX();
+			int lpy = spawnTile.getY();
+
+			if (lpx == centerX && lpy < centerY) {
+				obj.setOrientation(1024);
+			} else if (lpx < centerX && lpy < centerY) {
+				obj.setOrientation(1280);
+			} else if (lpx < centerX && lpy == centerY) {
+				obj.setOrientation(1536);
+			} else if (lpx < centerX && lpy > centerY) {
+				obj.setOrientation(1792);
+			} else if (lpx == centerX && lpy > centerY) {
+				obj.setOrientation(0);
+			} else if (lpx > centerX && lpy > centerY) {
+				obj.setOrientation(256);
+			} else if (lpx > centerX && lpy == centerY) {
+				obj.setOrientation(512);
+			} else if (lpx > centerX && lpy < centerY) {
+				obj.setOrientation(768);
+			}
+
+			obj.setLocation(lp, client.getPlane());
+			obj.setActive(true);
+
+			FakeAxe fake = new FakeAxe(obj, path, false);
+			fake.setCurrentIndex(0);
+			fake.setTicksUntilThrow(3);
+			fakes.add(fake);
+			newFakes.put(spawnTile, fake);
+			dbg("Spawned fake at " + spawnTile + " idx=" + 0 + " reversed=" + false);
 		}
 
 		dbg("Created " + newFakes.size() + " new fakes, total=" + fakes.size());
