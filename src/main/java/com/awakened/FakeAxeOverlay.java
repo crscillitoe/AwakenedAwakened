@@ -14,7 +14,6 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
@@ -22,18 +21,18 @@ import java.awt.Polygon;
 @Singleton
 public class FakeAxeOverlay extends Overlay
 {
-	private static final Color FILL_COLOR   = new Color(255, 0, 0, 40);
-	private static final Color BORDER_COLOR = new Color(255, 80, 0, 200);
-	private static final BasicStroke BORDER_STROKE = new BasicStroke(2);
+	private static final BasicStroke BORDER_STROKE = new BasicStroke(1);
 
 	private final Client client;
 	private final AwakenedPlugin plugin;
+	private final AwakenedConfig config;
 
 	@Inject
-	public FakeAxeOverlay(Client client, AwakenedPlugin plugin)
+	public FakeAxeOverlay(Client client, AwakenedPlugin plugin, AwakenedConfig config)
 	{
 		this.client = client;
 		this.plugin = plugin;
+		this.config = config;
 		setPosition(OverlayPosition.DYNAMIC);
 		setLayer(OverlayLayer.ABOVE_SCENE);
 	}
@@ -89,9 +88,9 @@ public class FakeAxeOverlay extends Overlay
 		{
 			return;
 		}
-		graphics.setColor(FILL_COLOR);
+		graphics.setColor(config.axeFillColor());
 		graphics.fill(poly);
-		graphics.setColor(BORDER_COLOR);
+		graphics.setColor(config.axeBorderColor());
 		graphics.setStroke(BORDER_STROKE);
 		graphics.draw(poly);
 	}

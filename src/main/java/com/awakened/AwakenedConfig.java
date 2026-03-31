@@ -3,7 +3,10 @@ package com.awakened;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Range;
+
+import java.awt.Color;
 
 @ConfigGroup("awakened")
 public interface AwakenedConfig extends Config
@@ -30,5 +33,29 @@ public interface AwakenedConfig extends Config
 	default int maxDoom()
 	{
 		return 15;
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "axeFillColor",
+		name = "Axe Fill",
+		description = "Fill colour of the 3x3 axe danger zone overlay",
+		position = 2
+	)
+	default Color axeFillColor()
+	{
+		return new Color(207, 138, 253, 0);
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "axeBorderColor",
+		name = "Axe Border",
+		description = "Border colour of the 3x3 axe danger zone overlay",
+		position = 3
+	)
+	default Color axeBorderColor()
+	{
+		return new Color(185, 203, 237, 255);
 	}
 }
