@@ -200,12 +200,6 @@ public class FakeAxe
 			}
 		}
 
-		if (total > 0)
-		{
-			// Axe sound effect
-			client.playSoundEffect(7083);
-		}
-
 		return total;
 	}
 

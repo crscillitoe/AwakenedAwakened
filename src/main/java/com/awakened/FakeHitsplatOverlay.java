@@ -30,6 +30,7 @@ public class FakeHitsplatOverlay extends Overlay
 
 	private final Client client;
 	private final List<ActiveHitsplat> active = new ArrayList<>();
+	private int hitCounter = 0;
 
 	@Inject
 	public FakeHitsplatOverlay(Client client)
@@ -41,9 +42,9 @@ public class FakeHitsplatOverlay extends Overlay
 
 	/**
 	 * Spawns a hitsplat at the player's current screen position.
-	 * Call this when fake damage is dealt.
+	 * The displayed number increments by 1 each call (1, 2, 3, …).
 	 */
-	public void addHitsplat(int amount)
+	public void addHitsplat()
 	{
 		LocalPoint lp = client.getLocalPlayer().getLocalLocation();
 		if (lp == null)
@@ -56,7 +57,7 @@ public class FakeHitsplatOverlay extends Overlay
 		{
 			return;
 		}
-		active.add(new ActiveHitsplat(amount, p));
+		active.add(new ActiveHitsplat(++hitCounter, p));
 	}
 
 	/**
@@ -72,6 +73,7 @@ public class FakeHitsplatOverlay extends Overlay
 	public void reset()
 	{
 		active.clear();
+		hitCounter = 0;
 	}
 
 	@Override

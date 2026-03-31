@@ -9,7 +9,6 @@ import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.MenuEntryAdded;
-import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.PostItemComposition;
@@ -62,6 +61,8 @@ public class AwakenedPlugin extends Plugin
     private int fakeHp;
 
 	private boolean poisonActive = false;
+	private boolean tookAxeDamage = false;
+	private int pendingDisplay = 0;
 
 	private static final int VARDORVIS_REGION = 4405;
 	private static final String[] RAINBOW_COLORS = {
@@ -74,9 +75,8 @@ public class AwakenedPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		log.debug("Example started!");
 		overlayManager.add(itemOverlay);
-		overlayManager.add(hpBarOverlay);
+		// overlayManager.add(hpBarOverlay);
 		overlayManager.add(deathOverlay);
 		overlayManager.add(fakeHitsplatOverlay);
 		overlayManager.add(fakeAxeOverlay);
@@ -87,9 +87,8 @@ public class AwakenedPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		log.debug("Example stopped!");
 		overlayManager.remove(itemOverlay);
-		overlayManager.remove(hpBarOverlay);
+		// overlayManager.remove(hpBarOverlay);
 		overlayManager.remove(deathOverlay);
 		overlayManager.remove(fakeHitsplatOverlay);
 		overlayManager.remove(fakeAxeOverlay);
@@ -106,25 +105,9 @@ public class AwakenedPlugin extends Plugin
 			PoisonTile.cleanupAll();
 			fakeHp = config.maxDoom();
 			poisonActive = false;
+			pendingDisplay = 0;
 			deathOverlay.hide();
 			fakeHitsplatOverlay.reset();
-		}
-	}
-
-	@Subscribe
-	public void onNpcChanged(NpcChanged event)
-	{
-		int id = event.getNpc().getId();
-		if (id == 12223)
-		{
-			int healthRatio = event.getNpc().getHealthRatio();
-			int healthScale = event.getNpc().getHealthScale();
-
-			double ratio = (double)healthRatio / (double)healthScale;
-			if (ratio <= 0.5)
-			{
-				poisonActive = true;
-			}
 		}
 	}
 
@@ -152,6 +135,10 @@ public class AwakenedPlugin extends Plugin
 		{
 			return;
 		}
+		if (!poisonActive)
+		{
+			checkBossHealth();
+		}
 		fakeHitsplatOverlay.tick();
 		FakeAxe.tickAll(client);
 
@@ -169,18 +156,59 @@ public class AwakenedPlugin extends Plugin
 		}
 	}
 
+	private void checkBossHealth()
+	{
+		for (NPC npc : client.getNpcs())
+		{
+			if (npc.getId() != 12223)
+			{
+				continue;
+			}
+			int healthRatio = npc.getHealthRatio();
+			int healthScale = npc.getHealthScale();
+			if (healthRatio == -1 || healthScale == 0)
+			{
+				continue;
+			}
+			if ((double) healthRatio / healthScale <= 0.5)
+			{
+				poisonActive = true;
+			}
+		}
+	}
+
 	public void handleDamage()
 	{
-		int damageTaken = PoisonTile.getDamage(client) + FakeAxe.getDamage(client);
+		// Display effects for the damage calculated last tick
+		if (pendingDisplay > 0)
+		{
+			if (tookAxeDamage)
+			{
+				client.playSoundEffect(7083);
+				tookAxeDamage = false;
+			}
+
+			for (int i = 0 ; i < pendingDisplay ; i++) {
+				fakeHitsplatOverlay.addHitsplat();
+			}
+
+			if (fakeHp == 0)
+			{
+				deathOverlay.show();
+			}
+		}
+
+		int poisonDamageTaken = PoisonTile.getDamage(client);
+		int axeDamageTaken = FakeAxe.getDamage(client);
+
+		if (axeDamageTaken > 0)
+		{
+			tookAxeDamage = true;
+		}
+
+		int damageTaken = poisonDamageTaken + axeDamageTaken;
 		fakeHp = Math.max(0, fakeHp - damageTaken);
-		if (damageTaken > 0)
-		{
-			fakeHitsplatOverlay.addHitsplat(damageTaken);
-		}
-		if (fakeHp == 0)
-		{
-			deathOverlay.show();
-		}
+		pendingDisplay = damageTaken;
 	}
 
 	@Subscribe
