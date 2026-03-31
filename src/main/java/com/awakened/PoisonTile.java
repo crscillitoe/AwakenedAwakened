@@ -2,6 +2,8 @@ package com.awakened;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.Model;
+import net.runelite.api.ModelData;
 import net.runelite.api.RuneLiteObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -104,7 +106,16 @@ public class PoisonTile
 		}
 
 		RuneLiteObject obj = client.createRuneLiteObject();
-		obj.setModel(client.loadModel(POISON_MODEL_ID));
+		ModelData modelData = client.loadModelData(POISON_MODEL_ID).cloneColors();
+		short[] faceColors = modelData.getFaceColors();
+		for (int i = 0; i < faceColors.length; i++)
+		{
+			int lightness = (int) ((faceColors[i] & 0x7F) * 0.7);
+			int saturation = (faceColors[i] >> 7) & 0x7;
+			// Hue ~22 is green in OSRS HSL
+			faceColors[i] = (short) ((22 << 10) | (saturation << 7) | lightness);
+		}
+		obj.setModel(modelData.light());
 		obj.setLocation(lp, client.getPlane());
 		obj.setActive(true);
 

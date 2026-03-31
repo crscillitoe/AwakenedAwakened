@@ -71,6 +71,8 @@ public class AwakenedPlugin extends Plugin
 	private boolean poisonActive = false;
 	private boolean tookAxeDamage = false;
 	private int pendingDisplay = 0;
+	private NPC acidTextNpc = null;
+	private int acidTextTicksRemaining = 0;
 
 	private static final int VARDORVIS_REGION = 4405;
 	private static final String[] RAINBOW_COLORS = {
@@ -164,6 +166,12 @@ public class AwakenedPlugin extends Plugin
 			spawnTickCount--;
 		}
 
+		if (acidTextTicksRemaining > 0 && --acidTextTicksRemaining == 0 && acidTextNpc != null)
+		{
+			acidTextNpc.setOverheadText("");
+			acidTextNpc = null;
+		}
+
         fakeHead.onGameTick(event);
 	}
 
@@ -181,9 +189,16 @@ public class AwakenedPlugin extends Plugin
 			{
 				continue;
 			}
-			if ((double) healthRatio / healthScale <= 0.5)
+			if ((double) healthRatio / healthScale <= config.acidPhaseHpPercent() / 100.0)
 			{
 				poisonActive = true;
+				String text = config.acidPhaseText();
+				if (text != null && !text.isEmpty())
+				{
+					npc.setOverheadText(text);
+					acidTextNpc = npc;
+					acidTextTicksRemaining = 6;
+				}
 			}
 		}
 	}

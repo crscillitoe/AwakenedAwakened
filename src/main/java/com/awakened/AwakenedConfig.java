@@ -35,6 +35,29 @@ public interface AwakenedConfig extends Config
 		return 15;
 	}
 
+	@Range(min = 1, max = 100)
+	@ConfigItem(
+		keyName = "acidPhaseHpPercent",
+		name = "Acid Phase HP %",
+		description = "Boss HP percentage at which the acid phase begins",
+		position = 2
+	)
+	default int acidPhaseHpPercent()
+	{
+		return 50;
+	}
+
+	@ConfigItem(
+		keyName = "acidPhaseText",
+		name = "Acid Phase Text",
+		description = "Text displayed above the boss when acid phase begins",
+		position = 2
+	)
+	default String acidPhaseText()
+	{
+		return "moo! moo!";
+	}
+
 	@ConfigItem(
 		keyName = "showDeathScreen",
 		name = "Show Death Screen",
