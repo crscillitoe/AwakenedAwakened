@@ -28,11 +28,22 @@ public interface AwakenedConfig extends Config
 			keyName = "maxDoom",
 			name = "Maximum Doom",
 			description = "Maximum amount of doom you can receive before death",
-			position = 0
+			position = 1
 	)
 	default int maxDoom()
 	{
 		return 15;
+	}
+
+	@ConfigItem(
+		keyName = "showDeathScreen",
+		name = "Show Death Screen",
+		description = "Show the 'YOU DIED' overlay and block interactions on death",
+		position = 2
+	)
+	default boolean showDeathScreen()
+	{
+		return true;
 	}
 
 	@Alpha
@@ -40,7 +51,7 @@ public interface AwakenedConfig extends Config
 		keyName = "axeFillColor",
 		name = "Axe Fill",
 		description = "Fill colour of the 3x3 axe danger zone overlay",
-		position = 2
+		position = 3
 	)
 	default Color axeFillColor()
 	{
@@ -52,7 +63,7 @@ public interface AwakenedConfig extends Config
 		keyName = "axeBorderColor",
 		name = "Axe Border",
 		description = "Border colour of the 3x3 axe danger zone overlay",
-		position = 3
+		position = 4
 	)
 	default Color axeBorderColor()
 	{

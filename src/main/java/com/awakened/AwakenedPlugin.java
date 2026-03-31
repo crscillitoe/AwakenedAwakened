@@ -205,7 +205,12 @@ public class AwakenedPlugin extends Plugin
 
 			if (fakeHp == 0)
 			{
-				deathOverlay.show();
+				if (config.showDeathScreen())
+				{
+					deathOverlay.show();
+				}
+				client.getLocalPlayer().setAnimation(836);
+				client.getLocalPlayer().setAnimationFrame(0);
 			}
 		}
 
@@ -244,7 +249,7 @@ public class AwakenedPlugin extends Plugin
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		if (isInVardorvisInstance() && fakeHp == 0)
+		if (isInVardorvisInstance() && fakeHp == 0 && config.showDeathScreen())
 		{
 			client.setMenuEntries(new MenuEntry[0]);
 		}
