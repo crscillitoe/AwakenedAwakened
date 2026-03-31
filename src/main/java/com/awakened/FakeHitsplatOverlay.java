@@ -84,14 +84,16 @@ public class FakeHitsplatOverlay extends Overlay
 			return null;
 		}
 
-		// Reset transform so coordinates are canvas-absolute
+		// Certified Zoink-Wizard code genius moment
+		Point p = Perspective.localToCanvas(client, client.getLocalPlayer().getLocalLocation(), client.getPlane(), 100);
+
 		java.awt.geom.AffineTransform savedTransform = graphics.getTransform();
 		graphics.setTransform(new java.awt.geom.AffineTransform());
 
 		for (ActiveHitsplat h : active)
 		{
-			int x = h.screenPos.getX() - SPLAT_W / 2;
-			int y = h.screenPos.getY() - h.ticksElapsed * FLOAT_PX_PER_TICK;
+			int x = p.getX() - SPLAT_W / 2;
+			int y = p.getY() - h.ticksElapsed * FLOAT_PX_PER_TICK;
 
 			// Black filled oval
 			graphics.setColor(Color.BLACK);
