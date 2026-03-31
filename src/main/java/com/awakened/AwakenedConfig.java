@@ -19,4 +19,16 @@ public interface AwakenedConfig extends Config
 	{
 		return 10;
 	}
+
+	@Range(min = 1, max = 50)
+	@ConfigItem(
+			keyName = "maxDoom",
+			name = "Maximum Doom",
+			description = "Maximum amount of doom you can receive before death",
+			position = 0
+	)
+	default int maxDoom()
+	{
+		return 15;
+	}
 }

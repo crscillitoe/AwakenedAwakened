@@ -17,11 +17,13 @@ public class HpBarOverlay extends Overlay
 	private static final int BAR_HEIGHT = 24;
 
 	private final AwakenedPlugin plugin;
+	private final AwakenedConfig config;
 
 	@Inject
-	public HpBarOverlay(AwakenedPlugin plugin)
+	public HpBarOverlay(AwakenedPlugin plugin, AwakenedConfig config)
 	{
 		this.plugin = plugin;
+		this.config = config;
 		setPosition(OverlayPosition.TOP_LEFT);
 		setLayer(OverlayLayer.ABOVE_WIDGETS);
 	}
@@ -34,7 +36,7 @@ public class HpBarOverlay extends Overlay
 			return null;
 		}
 
-		double fraction = (double) plugin.getFakeHp() / AwakenedPlugin.MAX_FAKE_HP;
+		double fraction = (double) plugin.getFakeHp() / config.maxDoom();
 		int fillWidth = (int) (BAR_WIDTH * fraction);
 
 		// Background

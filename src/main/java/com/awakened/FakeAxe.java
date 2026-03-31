@@ -8,6 +8,7 @@ import net.runelite.api.coords.WorldPoint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +21,7 @@ public class FakeAxe
 {
 	// ── Manager-level static state ────────────────────────────────────────────
 	public static final int NPC_AXE_STATIC = 12225;
+	public static final int NPC_AXE_FLYING = 12227;
 
 	private static final List<List<WorldPoint>> AXE_PATHS = new ArrayList<>();
 	private static final Set<WorldPoint> SPAWN_TILES = new HashSet<>();
@@ -39,6 +41,19 @@ public class FakeAxe
 		this.runeLiteObject = runeLiteObject;
 		this.path = path;
 		this.reversed = reversed;
+	}
+
+	// ── Static: active-axe access ─────────────────────────────────────────────
+	public static List<FakeAxe> getActiveAxes()
+	{
+		return Collections.unmodifiableList(ACTIVE);
+	}
+
+	// ── Instance: current position ────────────────────────────────────────────
+	public LocalPoint getCurrentLocalPoint(Client client)
+	{
+		int posIndex = moving ? currentIndex : 0;
+		return toLocalPoint(client, path.get(posIndex));
 	}
 
 	// ── Getters / setters ─────────────────────────────────────────────────────
@@ -159,8 +174,9 @@ public class FakeAxe
 	 */
 	public static int getDamage(Client client)
 	{
-		// Player position in scene (local) coordinates — instance-space, not template-space
-		LocalPoint playerLp = client.getLocalPlayer().getLocalLocation();
+		// Use world location → LocalPoint so we get the server-authoritative tile,
+		// not the interpolated walk position that getLocalLocation() returns mid-step.
+		LocalPoint playerLp = LocalPoint.fromWorld(client, client.getLocalPlayer().getWorldLocation());
 		if (playerLp == null) return 0;
 
 		int total = 0;
@@ -176,13 +192,15 @@ public class FakeAxe
 			if (Math.abs(playerLp.getSceneX() - axeLp.getSceneX()) <= 1 &&
 				Math.abs(playerLp.getSceneY() - axeLp.getSceneY()) <= 1)
 			{
-				log.debug("Player position X: " + playerLp.getSceneX() + " Y: " + playerLp.getSceneY());
-				log.debug("Axe    position X: " + axeLp.getSceneX() + " Y: " + axeLp.getSceneY());
-				total += randomBetween(30, 50);
+				log.info("[FakeAxe] Damage hit — axe sceneX={} sceneY={} (moving={} index={}) | player sceneX={} sceneY={}",
+					axeLp.getSceneX(), axeLp.getSceneY(),
+					axe.moving, posIndex,
+					playerLp.getSceneX(), playerLp.getSceneY());
+				total += 1;
 			}
 		}
 
-		if (total > 0 )
+		if (total > 0)
 		{
 			// Axe sound effect
 			client.playSoundEffect(7083);

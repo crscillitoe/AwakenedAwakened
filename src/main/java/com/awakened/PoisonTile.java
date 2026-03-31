@@ -62,7 +62,7 @@ public class PoisonTile
 		{
 			if (pt.tile.equals(playerPos))
 			{
-				return 10;
+				return 1;
 			}
 		}
 		return 0;

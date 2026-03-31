@@ -4,6 +4,7 @@ import net.runelite.api.Client;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -21,11 +22,11 @@ import java.util.List;
 @Singleton
 public class FakeHitsplatOverlay extends Overlay
 {
-	private static final int LIFETIME_TICKS = 6;
+	private static final int LIFETIME_TICKS = 4;
 	private static final int FLOAT_PX_PER_TICK = 3;
-	private static final int SPLAT_W = 40;
+	private static final int SPLAT_W = 20;
 	private static final int SPLAT_H = 20;
-	private static final Font SPLAT_FONT = new Font("Arial", Font.BOLD, 12);
+	private static final Font SPLAT_FONT = FontManager.getRunescapeBoldFont();
 
 	private final Client client;
 	private final List<ActiveHitsplat> active = new ArrayList<>();

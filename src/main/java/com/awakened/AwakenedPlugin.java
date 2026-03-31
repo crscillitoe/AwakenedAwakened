@@ -53,11 +53,13 @@ public class AwakenedPlugin extends Plugin
 	@Inject
 	private FakeHitsplatOverlay fakeHitsplatOverlay;
 
+	@Inject
+	private FakeAxeOverlay fakeAxeOverlay;
+
 	private int spawnTickCount = 0;
 
-	public static final int MAX_FAKE_HP = 99;
 	@Getter
-    private int fakeHp = MAX_FAKE_HP;
+    private int fakeHp;
 
 	private boolean poisonActive = false;
 
@@ -77,6 +79,8 @@ public class AwakenedPlugin extends Plugin
 		overlayManager.add(hpBarOverlay);
 		overlayManager.add(deathOverlay);
 		overlayManager.add(fakeHitsplatOverlay);
+		overlayManager.add(fakeAxeOverlay);
+		fakeHp = config.maxDoom();
 		FakeAxe.initPaths();
 	}
 
@@ -88,6 +92,7 @@ public class AwakenedPlugin extends Plugin
 		overlayManager.remove(hpBarOverlay);
 		overlayManager.remove(deathOverlay);
 		overlayManager.remove(fakeHitsplatOverlay);
+		overlayManager.remove(fakeAxeOverlay);
 		FakeAxe.cleanupAll();
 		PoisonTile.cleanupAll();
 	}
@@ -99,7 +104,7 @@ public class AwakenedPlugin extends Plugin
 		{
 			FakeAxe.cleanupAll();
 			PoisonTile.cleanupAll();
-			fakeHp = MAX_FAKE_HP;
+			fakeHp = config.maxDoom();
 			poisonActive = false;
 			deathOverlay.hide();
 			fakeHitsplatOverlay.reset();
@@ -148,9 +153,10 @@ public class AwakenedPlugin extends Plugin
 			return;
 		}
 		fakeHitsplatOverlay.tick();
+		FakeAxe.tickAll(client);
+
 		handleDamage();
 
-		FakeAxe.tickAll(client);
 
 		if (poisonActive)
 		{
