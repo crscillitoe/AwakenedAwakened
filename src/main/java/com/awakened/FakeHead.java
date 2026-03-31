@@ -51,7 +51,8 @@ public class FakeHead
 
 
                 // 2520 // Mage
-                int projectileID = randomBetween(2520, 2521); // Ranged
+                int projectileID = randomBetween(2520, 2521);
+                client.playSoundEffect(7124);
                 Projectile proj = client.createProjectile(projectileID,
                         client.getPlane(),
                         center.getX(),
