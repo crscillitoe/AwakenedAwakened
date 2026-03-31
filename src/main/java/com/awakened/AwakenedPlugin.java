@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
@@ -217,9 +218,27 @@ public class AwakenedPlugin extends Plugin
 			tookAxeDamage = true;
 		}
 
+		// Head damage hitsplats display immediately (1 tick earlier than axe/poison)
+		if (headDamageTaken > 0)
+		{
+			for (int i = 0; i < headDamageTaken; i++)
+			{
+				fakeHitsplatOverlay.addHitsplat();
+			}
+		}
+
 		int damageTaken = poisonDamageTaken + axeDamageTaken + headDamageTaken;
 		fakeHp = Math.max(0, fakeHp - damageTaken);
-		pendingDisplay = damageTaken;
+		pendingDisplay = poisonDamageTaken + axeDamageTaken;
+	}
+
+	@Subscribe
+	public void onHitsplatApplied(HitsplatApplied event)
+	{
+		if (event.getActor() == client.getLocalPlayer())
+		{
+			fakeHitsplatOverlay.trackRealHitsplat(event.getHitsplat().getDisappearsOnGameCycle());
+		}
 	}
 
 	@Subscribe

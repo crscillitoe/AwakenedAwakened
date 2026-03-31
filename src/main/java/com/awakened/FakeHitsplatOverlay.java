@@ -4,6 +4,8 @@ import net.runelite.api.Client;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.gameval.SpriteID;
+import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -16,26 +18,31 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
 @Singleton
 public class FakeHitsplatOverlay extends Overlay
 {
-	private static final int LIFETIME_TICKS = 4;
+	private static final int LIFETIME_TICKS = 1;
 	private static final int FLOAT_PX_PER_TICK = 3;
-	private static final int SPLAT_W = 20;
-	private static final int SPLAT_H = 20;
-	private static final Font SPLAT_FONT = FontManager.getRunescapeBoldFont();
+	private static final Font SPLAT_FONT = FontManager.getRunescapeSmallFont();
+
+	private static final int REAL_HITSPLAT_OFFSET = 12;
+	private static final int REFERENCE_ZOOM = 512;
 
 	private final Client client;
+	private final SpriteManager spriteManager;
 	private final List<ActiveHitsplat> active = new ArrayList<>();
+	private final List<Integer> realHitsplatExpiryCycles = new ArrayList<>();
 	private int hitCounter = 0;
 
 	@Inject
-	public FakeHitsplatOverlay(Client client)
+	public FakeHitsplatOverlay(Client client, SpriteManager spriteManager)
 	{
 		this.client = client;
+		this.spriteManager = spriteManager;
 		setPosition(OverlayPosition.DYNAMIC);
 		setLayer(OverlayLayer.ABOVE_WIDGETS);
 	}
@@ -43,6 +50,7 @@ public class FakeHitsplatOverlay extends Overlay
 	/**
 	 * Spawns a hitsplat at the player's current screen position.
 	 * The displayed number increments by 1 each call (1, 2, 3, …).
+	 * Any existing hitsplat with a lower amount is removed so only the highest shows.
 	 */
 	public void addHitsplat()
 	{
@@ -57,7 +65,10 @@ public class FakeHitsplatOverlay extends Overlay
 		{
 			return;
 		}
-		active.add(new ActiveHitsplat(++hitCounter, p));
+		int newAmount = ++hitCounter;
+		int yOffset = getActiveRealHitsplatCount() * REAL_HITSPLAT_OFFSET;
+		active.removeIf(h -> h.amount < newAmount);
+		active.add(new ActiveHitsplat(newAmount, p, yOffset));
 	}
 
 	/**
@@ -73,7 +84,57 @@ public class FakeHitsplatOverlay extends Overlay
 	public void reset()
 	{
 		active.clear();
+		realHitsplatExpiryCycles.clear();
 		hitCounter = 0;
+	}
+
+	/**
+	 * Tracks a real hitsplat applied to the local player so we can offset
+	 * custom hitsplats to avoid overlapping.
+	 */
+	public void trackRealHitsplat(int disappearsOnGameCycle)
+	{
+		realHitsplatExpiryCycles.add(disappearsOnGameCycle);
+	}
+
+	private int getActiveRealHitsplatCount()
+	{
+		int currentCycle = client.getGameCycle();
+		realHitsplatExpiryCycles.removeIf(cycle -> cycle <= currentCycle);
+		return realHitsplatExpiryCycles.size();
+	}
+
+	private BufferedImage buildSplatImage(int amount)
+	{
+		BufferedImage rawSplat = spriteManager.getSprite(SpriteID.Hitmark.COLOSSEUM_DOOM, 0);
+		if (rawSplat == null)
+		{
+			return null;
+		}
+
+		BufferedImage splat = new BufferedImage(
+			rawSplat.getColorModel(),
+			rawSplat.copyData(null),
+			rawSplat.getColorModel().isAlphaPremultiplied(),
+			null);
+
+		Graphics2D g = splat.createGraphics();
+		g.setFont(SPLAT_FONT);
+
+		FontMetrics fm = g.getFontMetrics();
+		String text = String.valueOf(amount);
+		int x = (splat.getWidth() - fm.stringWidth(text)) / 2;
+		int y = (splat.getHeight() - fm.getAscent()) / 2 + fm.getAscent();
+
+		// Text shadow
+		g.setColor(Color.BLACK);
+		g.drawString(text, x + 1, y + 1);
+		// White number
+		g.setColor(Color.WHITE);
+		g.drawString(text, x, y);
+
+		g.dispose();
+		return splat;
 	}
 
 	@Override
@@ -90,27 +151,22 @@ public class FakeHitsplatOverlay extends Overlay
 		java.awt.geom.AffineTransform savedTransform = graphics.getTransform();
 		graphics.setTransform(new java.awt.geom.AffineTransform());
 
+		double scale = (double) client.get3dZoom() / REFERENCE_ZOOM;
+
 		for (ActiveHitsplat h : active)
 		{
-			int x = p.getX() - SPLAT_W / 2;
-			int y = p.getY() - h.ticksElapsed * FLOAT_PX_PER_TICK;
+			BufferedImage splatImage = buildSplatImage(h.amount);
+			if (splatImage == null)
+			{
+				continue;
+			}
 
-			// Black filled oval
-			graphics.setColor(Color.BLACK);
-			graphics.fillOval(x, y, SPLAT_W, SPLAT_H);
+			int drawW = (int) (splatImage.getWidth() * scale);
+			int drawH = (int) (splatImage.getHeight() * scale);
+			int x = p.getX() - drawW / 2;
+			int y = p.getY() - (int) (h.ticksElapsed * FLOAT_PX_PER_TICK * scale) - drawH / 2 + (int) (h.realSplatOffset * scale);
 
-			// Dark grey border
-			graphics.setColor(Color.DARK_GRAY);
-			graphics.drawOval(x, y, SPLAT_W, SPLAT_H);
-
-			// White number centered inside oval
-			graphics.setFont(SPLAT_FONT);
-			graphics.setColor(Color.WHITE);
-			FontMetrics fm = graphics.getFontMetrics();
-			String text = String.valueOf(h.amount);
-			int tx = x + (SPLAT_W - fm.stringWidth(text)) / 2;
-			int ty = y + (SPLAT_H + fm.getAscent() - fm.getDescent()) / 2;
-			graphics.drawString(text, tx, ty);
+			graphics.drawImage(splatImage, x, y, drawW, drawH, null);
 		}
 
 		graphics.setTransform(savedTransform);
@@ -121,12 +177,14 @@ public class FakeHitsplatOverlay extends Overlay
 	{
 		final int amount;
 		final Point screenPos;
+		final int realSplatOffset;
 		int ticksElapsed = 0;
 
-		ActiveHitsplat(int amount, Point screenPos)
+		ActiveHitsplat(int amount, Point screenPos, int realSplatOffset)
 		{
 			this.amount = amount;
 			this.screenPos = screenPos;
+			this.realSplatOffset = realSplatOffset;
 		}
 	}
 }
