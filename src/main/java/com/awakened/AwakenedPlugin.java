@@ -17,6 +17,7 @@ import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -55,6 +56,12 @@ public class AwakenedPlugin extends Plugin
 	@Inject
 	private FakeAxeOverlay fakeAxeOverlay;
 
+    @Inject
+    private EventBus eventBus;
+
+    @Inject
+    private FakeHead fakeHead;
+
 	private int spawnTickCount = 0;
 
 	@Getter
@@ -82,6 +89,7 @@ public class AwakenedPlugin extends Plugin
 		overlayManager.add(fakeAxeOverlay);
 		fakeHp = config.maxDoom();
 		FakeAxe.initPaths();
+
 	}
 
 	@Override
@@ -154,13 +162,15 @@ public class AwakenedPlugin extends Plugin
 		if (spawnTickCount > 0) {
 			spawnTickCount--;
 		}
+
+        fakeHead.onGameTick(event);
 	}
 
 	private void checkBossHealth()
 	{
 		for (NPC npc : client.getNpcs())
 		{
-			if (npc.getId() != 12223)
+			if (npc.getId() != net.runelite.api.gameval.NpcID.VARDORVIS)
 			{
 				continue;
 			}
@@ -200,13 +210,14 @@ public class AwakenedPlugin extends Plugin
 
 		int poisonDamageTaken = PoisonTile.getDamage(client);
 		int axeDamageTaken = FakeAxe.getDamage(client);
+        int headDamageTaken = FakeHead.getDamage(client);
 
 		if (axeDamageTaken > 0)
 		{
 			tookAxeDamage = true;
 		}
 
-		int damageTaken = poisonDamageTaken + axeDamageTaken;
+		int damageTaken = poisonDamageTaken + axeDamageTaken + headDamageTaken;
 		fakeHp = Math.max(0, fakeHp - damageTaken);
 		pendingDisplay = damageTaken;
 	}
