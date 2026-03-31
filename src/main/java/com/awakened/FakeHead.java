@@ -28,7 +28,8 @@ public class FakeHead
         for (NPC npc : client.getNpcs())
         {
             if (npc.getId() != net.runelite.api.gameval.NpcID.VARDORVIS) continue;
-            if (npc.getAnimation() > Integer.MIN_VALUE)
+            System.out.println(npc.getAnimationFrame());
+            if ((npc.getAnimation() == 10340 && npc.getAnimationFrame() < 10))
             {
                 RuneLiteObject runeliteObject = client.createRuneLiteObject();
                 runeliteObject.setModel(client.loadModel(49301));
@@ -57,7 +58,7 @@ public class FakeHead
                         center.getY(),
                         150, // z coordinate
                         client.getGameCycle(),  // start cycle
-                        client.getGameCycle() + 60,  // end cycle
+                        client.getGameCycle() + 30,  // end cycle
                         50, // slope ???
                         30, // start height
                         150, // end height
