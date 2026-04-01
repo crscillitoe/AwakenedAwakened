@@ -1,5 +1,6 @@
 package com.awakened;
 
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.events.WidgetLoaded;
@@ -39,6 +40,9 @@ public class VardorvisQteManager
 	private final AwakenedConfig config;
 
 	private final List<Widget> spawnedWidgets = new ArrayList<>();
+
+    @Setter
+    private int currentHealthPercent;
 
 	@Inject
 	public VardorvisQteManager(Client client, ClientThread clientThread, AwakenedConfig config)
@@ -102,7 +106,7 @@ public class VardorvisQteManager
 
 	private void ensureSpawnedChildren(Widget main, List<Widget> anchors)
 	{
-		final int requested = Math.max(0, config.vardorvisExtraQteIcons());
+		final int requested = getNumberOfOrbsToSpawn();
 		if (requested == 0 || anchors.isEmpty())
 		{
 			return;
@@ -151,6 +155,26 @@ public class VardorvisQteManager
 			child.revalidate();
 		}
 	}
+
+    private int getNumberOfOrbsToSpawn()
+    {
+        if (currentHealthPercent > 75)
+        {
+            return 1;
+        }
+        else if (currentHealthPercent > 50)
+        {
+            return 2;
+        }
+        else if (currentHealthPercent > 25)
+        {
+            return 3;
+        }
+        else
+        {
+            return 5;
+        }
+    }
 
 	private void copyTemplateFields(Widget template, Widget child)
 	{

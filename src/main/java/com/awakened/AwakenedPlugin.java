@@ -186,6 +186,7 @@ public class AwakenedPlugin extends Plugin
 			{
 				continue;
 			}
+            vardorvisQteManager.setCurrentHealthPercent(healthRatio / healthScale);
 			if ((double) healthRatio / healthScale <= config.acidPhaseHpPercent() / 100.0)
 			{
 				poisonActive = true;
