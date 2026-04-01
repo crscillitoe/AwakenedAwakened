@@ -59,6 +59,9 @@ public class AwakenedPlugin extends Plugin
 	@Inject
 	private VardorvisQteManager vardorvisQteManager;
 
+	@Inject
+	private NpcOverheadManager npcOverheadManager;
+
 	private int spawnTickCount = 0;
 
 	@Getter
@@ -67,8 +70,6 @@ public class AwakenedPlugin extends Plugin
 	private boolean poisonActive = false;
 	private boolean tookAxeDamage = false;
 	private int pendingDisplay = 0;
-	private NPC acidTextNpc = null;
-	private int acidTextTicksRemaining = 0;
 
 	private static final int VARDORVIS_REGION = 4405;
 	private static final String[] RAINBOW_COLORS = {
@@ -111,6 +112,7 @@ public class AwakenedPlugin extends Plugin
 			FakeAxe.cleanupAll();
 			PoisonTile.cleanupAll();
 			vardorvisQteManager.onLoadingReset();
+			npcOverheadManager.reset();
 			fakeHp = config.maxDoom();
 			poisonActive = false;
 			pendingDisplay = 0;
@@ -163,11 +165,7 @@ public class AwakenedPlugin extends Plugin
 			spawnTickCount--;
 		}
 
-		if (acidTextTicksRemaining > 0 && --acidTextTicksRemaining == 0 && acidTextNpc != null)
-		{
-			acidTextNpc.setOverheadText("");
-			acidTextNpc = null;
-		}
+		npcOverheadManager.tick();
 
         fakeHead.onGameTick(event);
 	}
@@ -190,13 +188,7 @@ public class AwakenedPlugin extends Plugin
 			if ((double) healthRatio / healthScale <= config.acidPhaseHpPercent() / 100.0)
 			{
 				poisonActive = true;
-				String text = config.acidPhaseText();
-				if (text != null && !text.isEmpty())
-				{
-					npc.setOverheadText(text);
-					acidTextNpc = npc;
-					acidTextTicksRemaining = 6;
-				}
+				npcOverheadManager.showAcidPhaseText(npc);
 			}
 		}
 	}
@@ -224,6 +216,8 @@ public class AwakenedPlugin extends Plugin
 				}
 				client.getLocalPlayer().setAnimation(836);
 				client.getLocalPlayer().setAnimationFrame(0);
+
+				npcOverheadManager.showVardorvisDeathRoast();
 			}
 		}
 
@@ -257,6 +251,12 @@ public class AwakenedPlugin extends Plugin
 		{
 			fakeHitsplatOverlay.trackRealHitsplat(event.getHitsplat().getDisappearsOnGameCycle());
 		}
+	}
+
+	@Subscribe
+	public void onOverheadTextChanged(OverheadTextChanged event)
+	{
+		npcOverheadManager.onOverheadTextChanged(event);
 	}
 
 	@Subscribe
