@@ -68,18 +68,6 @@ public interface AwakenedConfig extends Config
         return true;
     }
 
-	@Range(min = 0, max = 24)
-	@ConfigItem(
-		keyName = "vardorvisExtraQteIcons",
-		name = "Vardorvis Extra QTE Icons",
-		description = "Additional QTE icons to spawn in Vardorvis.",
-		position = 1
-	)
-	default int vardorvisExtraQteIcons()
-	{
-		return 4;
-	}
-
 	@Alpha
 	@ConfigItem(
 		keyName = "axeFillColor",
