@@ -28,7 +28,6 @@ public class FakeHead
         for (NPC npc : client.getNpcs())
         {
             if (npc.getId() != net.runelite.api.gameval.NpcID.VARDORVIS) continue;
-            System.out.println(npc.getAnimationFrame());
             if ((npc.getAnimation() == 10340 && npc.getAnimationFrame() < 10))
             {
                 RuneLiteObject runeliteObject = client.createRuneLiteObject();
