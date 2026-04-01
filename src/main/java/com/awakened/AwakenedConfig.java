@@ -64,9 +64,20 @@ public interface AwakenedConfig extends Config
 		description = "Show the 'YOU DIED' overlay and block interactions on death",
 		position = 2
 	)
-	default boolean showDeathScreen()
+	default boolean showDeathScreen() {
+        return true;
+    }
+
+	@Range(min = 0, max = 24)
+	@ConfigItem(
+		keyName = "vardorvisExtraQteIcons",
+		name = "Vardorvis Extra QTE Icons",
+		description = "Additional QTE icons to spawn in Vardorvis.",
+		position = 1
+	)
+	default int vardorvisExtraQteIcons()
 	{
-		return true;
+		return 4;
 	}
 
 	@Alpha

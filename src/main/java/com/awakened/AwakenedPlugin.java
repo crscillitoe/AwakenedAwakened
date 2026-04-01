@@ -6,14 +6,7 @@ import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
-import net.runelite.api.events.HitsplatApplied;
-import net.runelite.api.events.MenuEntryAdded;
-import net.runelite.api.events.NpcDespawned;
-import net.runelite.api.events.NpcSpawned;
-import net.runelite.api.events.PostItemComposition;
-import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.events.*;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
@@ -62,6 +55,9 @@ public class AwakenedPlugin extends Plugin
 
     @Inject
     private FakeHead fakeHead;
+
+	@Inject
+	private VardorvisQteManager vardorvisQteManager;
 
 	private int spawnTickCount = 0;
 
@@ -114,6 +110,7 @@ public class AwakenedPlugin extends Plugin
 		{
 			FakeAxe.cleanupAll();
 			PoisonTile.cleanupAll();
+			vardorvisQteManager.onLoadingReset();
 			fakeHp = config.maxDoom();
 			poisonActive = false;
 			pendingDisplay = 0;
@@ -314,6 +311,8 @@ public class AwakenedPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
+		vardorvisQteManager.onWidgetLoaded(event);
+
 		if (event.getGroupId() != InterfaceID.DIALOG_OPTION)
 		{
 			return;
